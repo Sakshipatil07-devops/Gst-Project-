@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3">
+        <h1 class="h3 mb-0">Create Invoice</h1>
+    </div>
+    <div class="card-body">
+        {% if products %}
+            <form method="post">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Select</th>
+                                <th>Product Name</th>
+                                <th>Price</th>
+                                <th>GST %</th>
+                                <th>Available Stock</th>
+                                <th width="160">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                                <tr>
+                                    <td class="text-center">
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="selected_products"
+                                            value="{{ product['id'] }}"
+                                            {% if product['stock'] == 0 %}disabled{% endif %}
+                                        >
+                                    </td>
+                                    <td class="fw-semibold">{{ product["name"] }}</td>
+                                    <td>Rs. {{ "%.2f"|format(product["price"]) }}</td>
+                                    <td>{{ "%.2f"|format(product["gst"]) }}%</td>
+                                    <td>
+                                        {% if product["stock"] > 0 %}
+                                            <span class="badge text-bg-success">{{ product["stock"] }}</span>
+                                        {% else %}
+                                            <span class="badge text-bg-danger">Out of stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            class="form-control"
+                                            name="quantity_{{ product['id'] }}"
+                                            value="{{ request.form.get('quantity_' ~ product['id'], 1) }}"
+                                            {% if product['stock'] == 0 %}disabled{% endif %}
+                                        >
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Generate Invoice</button>
+                </div>
+            </form>
+        {% else %}
+            <div class="text-center py-5">
+                <p class="text-secondary mb-3">Add products before creating an invoice.</p>
+                <a href="{{ url_for('add_product') }}" class="btn btn-primary">Add Product</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

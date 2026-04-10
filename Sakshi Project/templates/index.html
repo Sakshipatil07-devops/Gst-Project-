@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4 align-items-stretch">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm hero-card h-100">
+            <div class="card-body p-4 p-lg-5">
+                <span class="badge text-bg-warning mb-3">Professional Invoice Management</span>
+                <h1 class="display-6 fw-bold mb-3">Streamline your billing and inventory management.</h1>
+                <p class="lead text-secondary mb-4">Create professional GST invoices, track inventory, manage products with real-time stock updates and complete financial calculations.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('add_product') }}" class="btn btn-primary btn-lg">Add Product</a>
+                    <a href="{{ url_for('invoice') }}" class="btn btn-outline-dark btn-lg">Create Invoice</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 stat-card">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-secondary">Products</h2>
+                        <p class="display-6 fw-bold mb-0">{{ product_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm border-0 stat-card">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-secondary">Total Sales</h2>
+                        <p class="display-6 fw-bold mb-0">Rs. {{ "%.2f"|format(sales_total) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm border-0 stat-card">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-secondary">Invoices</h2>
+                        <p class="display-6 fw-bold mb-0">{{ invoice_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm border-0 stat-card">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-secondary">Inventory Value</h2>
+                        <p class="display-6 fw-bold mb-0">Rs. {{ "%.2f"|format(stock_value) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card shadow-sm border-0 stat-card">
+                    <div class="card-body">
+                        <h2 class="h6 text-uppercase text-secondary">Low Stock Alert</h2>
+                        {% if low_stock_items %}
+                            <ul class="list-group list-group-flush">
+                                {% for item in low_stock_items %}
+                                    <li class="list-group-item px-0 d-flex justify-content-between">
+                                        <span>{{ item["name"] }}</span>
+                                        <span class="badge text-bg-danger">{{ item["stock"] }} left</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="mb-0 text-secondary">No low stock items right now.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

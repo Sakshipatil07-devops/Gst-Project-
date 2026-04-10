@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h1 class="h3 mb-0">{{ 'Edit Product' if edit_mode else 'Add Product' }}</h1>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Product Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ request.form.get('name', product['name'] if product else '') }}" required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="price" class="form-label">Price</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" value="{{ request.form.get('price', product['price'] if product else '') }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="gst_percentage" class="form-label">GST Percentage</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="gst_percentage" name="gst_percentage" value="{{ request.form.get('gst_percentage', product['gst'] if product else '') }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="stock" class="form-label">Stock</label>
+                            <input type="number" min="0" class="form-control" id="stock" name="stock" value="{{ request.form.get('stock', product['stock'] if product else '') }}" required>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">{{ 'Update Product' if edit_mode else 'Save Product' }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

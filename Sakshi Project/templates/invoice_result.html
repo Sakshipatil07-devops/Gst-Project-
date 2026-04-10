@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-10">
+        <div class="card shadow border-0 invoice-card">
+            <div class="card-body p-4 p-lg-5">
+                <div class="text-center mb-4">
+                    <h1 class="h2 fw-bold mb-1">Hardware Shop Invoice</h1>
+                    <p class="text-secondary mb-0">Invoice #{{ invoice_id }} | Generated bill summary</p>
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <table class="table table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Subtotal</th>
+                                <th>GST per Item</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in invoice_items %}
+                                <tr>
+                                    <td class="fw-semibold">{{ item["name"] }}</td>
+                                    <td>{{ item["quantity"] }}</td>
+                                    <td>Rs. {{ "%.2f"|format(item["price"]) }}</td>
+                                    <td>Rs. {{ "%.2f"|format(item["subtotal"]) }}</td>
+                                    <td>
+                                        Rs. {{ "%.2f"|format(item["gst_amount"]) }}
+                                        <div class="small text-secondary">{{ "%.2f"|format(item["gst_percentage"]) }}%</div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row justify-content-end">
+                    <div class="col-md-5">
+                        <div class="summary-box p-4 rounded-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Total</span>
+                                <span>Rs. {{ "%.2f"|format(total) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>CGST</span>
+                                <span>Rs. {{ "%.2f"|format(cgst_total) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>SGST</span>
+                                <span>Rs. {{ "%.2f"|format(sgst_total) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Total GST</span>
+                                <span>Rs. {{ "%.2f"|format(total_gst) }}</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold fs-5">
+                                <span>Grand Total</span>
+                                <span>Rs. {{ "%.2f"|format(grand_total) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('invoice') }}" class="btn btn-outline-dark">Create Another Invoice</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
