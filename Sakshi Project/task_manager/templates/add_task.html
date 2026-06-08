@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Task' if edit_mode else 'Add New Task' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8 col-xl-7">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4 gap-3">
+      <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Back
+      </a>
+      <div>
+        <h2 class="fw-bold mb-0" style="letter-spacing:-.03em;">
+          <i class="fas {{ 'fa-pen-to-square' if edit_mode else 'fa-plus-circle' }} me-2"
+             style="color:var(--tm-primary);"></i>
+          {{ 'Edit Task' if edit_mode else 'Add New Task' }}
+        </h2>
+        {% if edit_mode and task %}
+        <small class="text-muted">Editing: <strong>{{ task['title'] | truncate(50) }}</strong></small>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card">
+      <div class="card-body p-4 p-md-5">
+        <form method="POST" novalidate id="taskForm">
+
+          <!-- Title -->
+          <div class="mb-4">
+            <label for="title" class="form-label">
+              Task Title <span class="text-danger">*</span>
+            </label>
+            <input type="text" class="form-control form-control-lg" id="title" name="title"
+                   placeholder="What needs to be done?"
+                   value="{{ task['title'] if edit_mode and task else '' }}"
+                   maxlength="200" required autofocus>
+            <div class="d-flex justify-content-between mt-1">
+              <small class="text-muted">Be clear and specific</small>
+              <small class="text-muted">
+                <span id="titleLen">{{ task['title'] | length if edit_mode and task else 0 }}</span>/200
+              </small>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-4">
+            <label for="description" class="form-label">
+              Description <span class="text-muted fw-normal" style="font-size:.8rem;">(optional)</span>
+            </label>
+            <textarea class="form-control" id="description" name="description" rows="3"
+                      placeholder="Add details about this task…">{{ task['description'] if edit_mode and task else '' }}</textarea>
+          </div>
+
+          <!-- Priority + Category -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+              <select class="form-select" id="priority" name="priority" required>
+                {% set current_priority = task['priority'] if edit_mode and task else 'medium' %}
+                {% for p in priorities %}
+                <option value="{{ p }}" {{ 'selected' if current_priority == p }}>
+                  {% if p == 'low' %}🟢 Low — When time permits
+                  {% elif p == 'medium' %}🔵 Medium — Standard
+                  {% elif p == 'high' %}🟠 High — Important
+                  {% else %}🔴 Urgent — Needs immediate attention
+                  {% endif %}
+                </option>
+                {% endfor %}
+              </select>
+              <div class="mt-2">
+                <span id="priorityPreview"
+                      class="badge priority-{{ task['priority'] if edit_mode and task else 'medium' }} px-3 py-2">
+                  {{ (task['priority'] if edit_mode and task else 'medium') | title }} Priority
+                </span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label for="category" class="form-label">Category</label>
+              <select class="form-select" id="category" name="category">
+                {% set current_cat = task['category'] if edit_mode and task else 'Other' %}
+                {% for cat in categories %}
+                <option value="{{ cat }}" {{ 'selected' if current_cat == cat }}>{{ cat }}</option>
+                {% endfor %}
+                <option value="__new__">+ Add New Category…</option>
+              </select>
+              <div id="newCategoryDiv" class="mt-2 d-none">
+                <input type="text" class="form-control" name="new_category"
+                       placeholder="Enter new category name" maxlength="50">
+              </div>
+            </div>
+          </div>
+
+          <!-- Status (edit) + Due Date -->
+          <div class="row g-3 mb-4">
+            {% if edit_mode %}
+            <div class="col-md-6">
+              <label for="status" class="form-label">Status</label>
+              <select class="form-select" id="status" name="status">
+                <option value="pending"   {{ 'selected' if task['status'] == 'pending'   }}>⏳ Pending</option>
+                <option value="completed" {{ 'selected' if task['status'] == 'completed' }}>✅ Completed</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+            {% else %}
+            <div class="col-12">
+            {% endif %}
+              <label for="due_date" class="form-label">
+                Due Date <span class="text-muted fw-normal" style="font-size:.8rem;">(optional)</span>
+              </label>
+              <input type="date" class="form-control" id="due_date" name="due_date"
+                     value="{{ task['due_date'] if edit_mode and task and task['due_date'] else '' }}">
+              <small class="text-muted">Leave blank for no deadline</small>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="mb-4">
+            <label for="notes" class="form-label">
+              Notes <span class="text-muted fw-normal" style="font-size:.8rem;">(optional)</span>
+            </label>
+            <textarea class="form-control" id="notes" name="notes" rows="2"
+                      placeholder="Any additional notes, reminders, or links…">{{ task['notes'] if edit_mode and task else '' }}</textarea>
+          </div>
+
+          <!-- Task meta (edit only) -->
+          {% if edit_mode and task %}
+          <div class="alert border-0 mb-4 py-2 px-3 small"
+               style="background:rgba(99,102,241,.08);color:var(--tm-primary);">
+            <i class="fas fa-circle-info me-2"></i>
+            <strong>Task #{{ task['id'] }}</strong> &mdash;
+            Created: {{ task['created_at'] }} &nbsp;&bull;&nbsp;
+            Updated: {{ task['updated_at'] }}
+          </div>
+          {% endif %}
+
+          <!-- Buttons -->
+          <div class="d-flex gap-3 flex-wrap">
+            <button type="submit" class="btn btn-primary px-5" style="font-size:1rem;">
+              <i class="fas {{ 'fa-save' if edit_mode else 'fa-plus-circle' }} me-2"></i>
+              {{ 'Save Changes' if edit_mode else 'Create Task' }}
+            </button>
+            <a href="{{ url_for('tasks') }}" class="btn btn-outline-secondary px-4" style="font-size:1rem;">
+              <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            {% if edit_mode and task %}
+            <button type="button" class="btn btn-outline-danger px-4 ms-auto" style="font-size:1rem;"
+                    onclick="confirmDelete({{ task['id'] }}, '{{ task['title'] | replace("'", "\\'") }}')">
+              <i class="fas fa-trash me-2"></i>Delete
+            </button>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card border-0 mt-3"
+         style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15) !important;">
+      <div class="card-body py-3 px-4">
+        <p class="small fw-semibold mb-2" style="color:var(--tm-primary);">
+          <i class="fas fa-lightbulb me-2"></i>Quick Tips
+        </p>
+        <ul class="small text-muted mb-0 ps-3" style="line-height:1.8;">
+          <li>Use <strong>Urgent</strong> priority sparingly — only for tasks needing immediate attention</li>
+          <li>Setting a due date helps you track deadlines and avoid overdue tasks</li>
+          <li>Use the Notes field for links, context, or any important details</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete Modal (edit mode) -->
+{% if edit_mode and task %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-danger">
+          <i class="fas fa-triangle-exclamation me-2"></i>Delete Task
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-1">Permanently delete this task?</p>
+        <p class="fw-semibold">"{{ task['title'] }}"</p>
+        <p class="text-muted small mb-0">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="POST" action="{{ url_for('delete_task', task_id=task['id']) }}">
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-2"></i>Delete Task
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Title counter
+const titleInput = document.getElementById('title');
+const titleLen   = document.getElementById('titleLen');
+titleInput?.addEventListener('input', () => {
+  const n = titleInput.value.length;
+  titleLen.textContent = n;
+  titleLen.className = n > 180 ? 'text-danger fw-bold' : n > 150 ? 'text-warning' : '';
+});
+
+// Priority preview
+const prioritySel     = document.getElementById('priority');
+const priorityPreview = document.getElementById('priorityPreview');
+const priBadge = { low:'priority-low', medium:'priority-medium', high:'priority-high', urgent:'priority-urgent' };
+const priIcon  = { low:'🟢', medium:'🔵', high:'🟠', urgent:'🔴' };
+prioritySel?.addEventListener('change', () => {
+  const v = prioritySel.value;
+  priorityPreview.className = 'badge px-3 py-2 ' + (priBadge[v] || 'bg-secondary');
+  priorityPreview.textContent = (priIcon[v] || '') + ' ' + v.charAt(0).toUpperCase() + v.slice(1) + ' Priority';
+});
+
+// New category toggle
+const categorySel   = document.getElementById('category');
+const newCatDiv     = document.getElementById('newCategoryDiv');
+categorySel?.addEventListener('change', () => {
+  const show = categorySel.value === '__new__';
+  newCatDiv.classList.toggle('d-none', !show);
+  const inp = newCatDiv.querySelector('input');
+  inp.required = show;
+  if (show) inp.focus();
+});
+
+// Delete modal
+function confirmDelete(id, title) {
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

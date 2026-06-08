@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{% if view == 'all' %}All Tasks{% else %}My Tasks{% endif %} — AARMS Group{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if view == 'all' %}All Tasks{% else %}My Tasks{% endif %}</h1>
+    <p class="page-subtitle">
+      {{ tasks|length }} task{{ 's' if tasks|length != 1 else '' }} found
+      {% if search %}&nbsp;· search: "{{ search }}"{% endif %}
+    </p>
+  </div>
+  <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+    <a href="{{ url_for('export_tasks', view=view) }}" class="btn btn-secondary">&#128229; Export CSV</a>
+    {% if admin %}
+    <a href="{{ url_for('add_task') }}" class="btn btn-primary">&#43; New Task</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="tasks-toolbar">
+  <form method="GET" action="{{ url_for('tasks_list') }}" id="filter-form">
+    <input type="hidden" name="view" value="{{ view }}">
+    <div class="toolbar-top">
+      <div class="toolbar-search">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" name="search" value="{{ search }}"
+               placeholder="Search tasks by title or description..." autocomplete="off">
+      </div>
+
+      {% if admin %}
+      <div class="view-tabs">
+        <button type="submit" name="view" value="my"
+                class="view-tab {% if view != 'all' %}active{% endif %}">My Tasks</button>
+        <button type="submit" name="view" value="all"
+                class="view-tab {% if view == 'all' %}active{% endif %}">All Tasks</button>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      {% if search or status_f or prio_f or dept_f or cat_f %}
+      <a href="{{ url_for('tasks_list', view=view) }}" class="btn btn-secondary btn-sm">Clear Filters</a>
+      {% endif %}
+    </div>
+
+    <div class="toolbar-filters">
+      <select name="status" class="filter-select auto-submit">
+        <option value="">All Statuses</option>
+        {% for s in statuses %}
+        <option value="{{ s }}" {% if status_f == s %}selected{% endif %}>
+          {{ s.replace('_',' ') | title }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <select name="priority" class="filter-select auto-submit">
+        <option value="">All Priorities</option>
+        {% for p in priorities %}
+        <option value="{{ p }}" {% if prio_f == p %}selected{% endif %}>{{ p | title }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="department" class="filter-select auto-submit">
+        <option value="">All Departments</option>
+        {% for d in departments %}
+        <option value="{{ d }}" {% if dept_f == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="category" class="filter-select auto-submit">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+        <option value="{{ c }}" {% if cat_f == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="sort" class="filter-select auto-submit">
+        <option value="due_asc"   {% if sort_by == 'due_asc'   %}selected{% endif %}>Due Date ↑</option>
+        <option value="due_desc"  {% if sort_by == 'due_desc'  %}selected{% endif %}>Due Date ↓</option>
+        <option value="prio_desc" {% if sort_by == 'prio_desc' %}selected{% endif %}>Priority ↓</option>
+        <option value="created"   {% if sort_by == 'created'   %}selected{% endif %}>Newest First</option>
+        <option value="title"     {% if sort_by == 'title'     %}selected{% endif %}>Title A–Z</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="table-wrapper">
+  {% if tasks %}
+  <table class="tasks-table">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Assigned To</th>
+        <th>Department</th>
+        <th>Due Date</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Category</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for task in tasks %}
+    <tr class="{% if task.status == 'completed' %}row-completed{% endif %}">
+
+      <td>
+        <div class="task-title-cell">
+          <span class="prio-dot pd-{{ task.priority }}"></span>
+          <div class="task-name {% if task.status == 'completed' %}done{% endif %}">
+            <a href="{{ url_for('task_detail', tid=task.id) }}">{{ task.title }}</a>
+            {% if task.description %}
+            <div class="task-desc">{{ task.description }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </td>
+
+      <td>
+        {% if task.assignee_name %}
+        <div style="font-size:.82rem;font-weight:600;color:var(--txt-dark)">{{ task.assignee_name }}</div>
+        {% if task.assignee_dept %}
+        <div style="font-size:.72rem;color:var(--txt-light)">{{ task.assignee_dept }}</div>
+        {% endif %}
+        {% else %}
+        <span class="text-muted">Unassigned</span>
+        {% endif %}
+      </td>
+
+      <td>
+        {% if task.department %}
+        <span class="badge badge-dept">{{ task.department }}</span>
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+
+      <td>
+        {% if task.due_date %}
+          {% if task.due_date < today and task.status not in ['completed','on_hold'] %}
+          <span class="due-chip overdue">&#9888; {{ task.due_date }}<br><small>Overdue</small></span>
+          {% elif task.due_date == today and task.status not in ['completed','on_hold'] %}
+          <span class="due-chip due-today">&#128197; {{ task.due_date }}<br><small>Due Today</small></span>
+          {% else %}
+          <span class="due-chip upcoming">{{ task.due_date }}</span>
+          {% endif %}
+        {% else %}
+        <span class="due-chip no-date">No deadline</span>
+        {% endif %}
+      </td>
+
+      <td><span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span></td>
+
+      <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') | title }}</span></td>
+
+      <td><span style="font-size:.78rem;color:var(--txt-mid)">{{ task.category or '—' }}</span></td>
+
+      <td>
+        <div class="row-actions">
+          <a href="{{ url_for('task_detail', tid=task.id) }}"
+             class="action-btn" title="View details">&#128065;</a>
+          {% if admin %}
+          <a href="{{ url_for('edit_task', tid=task.id) }}"
+             class="action-btn" title="Edit task">&#9998;</a>
+          {% endif %}
+          <form method="POST" action="{{ url_for('toggle_task', tid=task.id) }}" style="display:inline">
+            <input type="hidden" name="next" value="{{ request.url }}">
+            <button class="action-btn {% if task.status == 'completed' %}action-done{% endif %}"
+                    title="{% if task.status == 'completed' %}Re-open{% else %}Mark complete{% endif %}">
+              &#10003;
+            </button>
+          </form>
+          {% if admin %}
+          <form method="POST" action="{{ url_for('delete_task', tid=task.id) }}" style="display:inline"
+                onsubmit="return confirm('Move this task to Recovery Bin? It will be auto-deleted after 30 days.')">
+            <input type="hidden" name="next" value="{{ request.url }}">
+            <button type="submit" class="action-btn action-delete" title="Delete task">&#128465;</button>
+          </form>
+          {% endif %}
+        </div>
+      </td>
+
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% else %}
+  <div class="empty-table">
+    <div class="empty-icon">&#128203;</div>
+    <div class="empty-title">
+      {% if search or status_f or prio_f or dept_f or cat_f %}
+        No tasks match your filters
+      {% else %}
+        No tasks assigned yet
+      {% endif %}
+    </div>
+    <p style="font-size:.875rem;color:var(--txt-light);margin-bottom:1rem">
+      {% if search or status_f or prio_f or dept_f or cat_f %}
+        Try adjusting your search or filters.
+      {% else %}
+        Start by creating your first task.
+      {% endif %}
+    </p>
+    <a href="{{ url_for('add_task') }}" class="btn btn-primary">&#43; New Task</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

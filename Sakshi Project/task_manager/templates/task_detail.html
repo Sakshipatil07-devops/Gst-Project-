@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }} — AARMS Group{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('tasks_list') }}" style="color:var(--txt-mid);font-size:.875rem">&#8592; Back to Tasks</a>
+    <h1 class="page-title" style="margin-top:.5rem">{{ task.title }}</h1>
+  </div>
+  {% if admin %}
+  <div style="display:flex;gap:.625rem;flex-wrap:wrap">
+    <a href="{{ url_for('edit_task', tid=task.id) }}" class="btn btn-primary">&#9998; Edit Task</a>
+    <form method="POST" action="{{ url_for('delete_task', tid=task.id) }}" style="display:inline"
+          onsubmit="return confirm('Move to Recovery Bin? Task will be auto-deleted after 30 days.')">
+      <button type="submit" class="btn btn-danger">&#128465; Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Status/meta header -->
+<div class="detail-header">
+  <div class="detail-title">{{ task.title }}</div>
+  <div class="detail-meta">
+    <span class="status-pill sp-{{ task.status }}">
+      {{ task.status.replace('_',' ') | title }}
+    </span>
+    <span class="badge badge-{{ task.priority }}">{{ task.priority | title }} Priority</span>
+    {% if task.department %}
+    <span class="badge badge-dept">{{ task.department }}</span>
+    {% endif %}
+    {% if task.category %}
+    <span style="font-size:.78rem;color:var(--txt-mid);background:var(--bg);padding:.2rem .55rem;border-radius:20px;border:1px solid var(--border)">
+      {{ task.category }}
+    </span>
+    {% endif %}
+    {% if task.due_date %}
+      {% if task.due_date < today and task.status not in ['completed','on_hold'] %}
+      <span style="color:var(--danger);font-weight:700;font-size:.82rem">&#9888; Overdue: {{ task.due_date }}</span>
+      {% elif task.due_date == today and task.status not in ['completed','on_hold'] %}
+      <span style="color:var(--orange);font-weight:700;font-size:.82rem">&#128197; Due Today: {{ task.due_date }}</span>
+      {% else %}
+      <span style="color:var(--txt-mid);font-size:.82rem">&#128197; Deadline: {{ task.due_date }}</span>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- Main detail grid -->
+<div class="detail-grid">
+
+  <!-- Left column -->
+  <div>
+    <div class="info-card">
+      <h4>Description</h4>
+      {% if task.description %}
+      <div class="desc-block">{{ task.description }}</div>
+      {% else %}
+      <p class="no-content">No description provided.</p>
+      {% endif %}
+    </div>
+
+    {% if task.notes %}
+    <div class="info-card">
+      <h4>Notes &amp; Instructions</h4>
+      <div class="desc-block">{{ task.notes }}</div>
+    </div>
+    {% endif %}
+
+    <div class="info-card">
+      <h4>Quick Status Update</h4>
+      <form method="POST" action="{{ url_for('set_status', tid=task.id) }}" class="status-change-form">
+        <input type="hidden" name="next" value="{{ request.url }}">
+        <select name="status">
+          {% for s in statuses %}
+          <option value="{{ s }}" {% if task.status == s %}selected{% endif %}>
+            {{ s.replace('_',' ') | title }}
+          </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Update Status</button>
+      </form>
+      <form method="POST" action="{{ url_for('toggle_task', tid=task.id) }}" style="margin-top:.5rem">
+        <input type="hidden" name="next" value="{{ request.url }}">
+        {% if task.status == 'completed' %}
+        <button type="submit" class="btn btn-secondary btn-sm" style="width:100%">&#8635; Re-open Task</button>
+        {% else %}
+        <button type="submit" class="btn btn-success btn-sm" style="width:100%">&#10003; Mark as Completed</button>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="info-card" id="comments">
+      <h4>&#128172; Comments ({{ comments|length }})</h4>
+
+      {% if comments %}
+      <div class="comment-list">
+        {% for c in comments %}
+        <div class="comment-item">
+          <div class="comment-avatar">{{ c.user_name[0] }}</div>
+          <div class="comment-bubble">
+            <div class="comment-header">
+              <span class="comment-author">{{ c.user_name }}</span>
+              <span class="comment-dept">{{ c.user_dept }}</span>
+              <span class="comment-time">{{ c.created_at[:16].replace('T',' ') }}</span>
+            </div>
+            <div class="comment-text">{{ c.comment }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="no-content" style="margin-bottom:.875rem">No comments yet. Be the first to add one.</p>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('add_comment', tid=task.id) }}" class="comment-form">
+        <textarea name="comment" placeholder="Write a comment or update..." required></textarea>
+        <div class="comment-form-actions">
+          <button type="submit" class="btn btn-primary btn-sm">&#128172; Post Comment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div>
+    <div class="info-card">
+      <h4>Assigned To</h4>
+      {% if task.assignee_name %}
+      <div class="assignee-block">
+        <div class="assignee-avatar">{{ task.assignee_name[0] }}</div>
+        <div>
+          <div class="assignee-name">{{ task.assignee_name }}</div>
+          <div class="assignee-role">{{ task.assignee_role or '' }}</div>
+          {% if task.assignee_dept %}
+          <span style="font-size:.72rem;background:#dbeafe;color:#1e40af;padding:.15rem .5rem;border-radius:20px;font-weight:600;display:inline-block;margin-top:.3rem">
+            {{ task.assignee_dept }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <p class="no-content">No assignee set.</p>
+      {% endif %}
+      {% if task.assigner_name %}
+      <div style="font-size:.78rem;color:var(--txt-mid);margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border)">
+        Assigned by: <strong style="color:var(--txt-dark)">{{ task.assigner_name }}</strong>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="info-card">
+      <h4>Task Details</h4>
+      <div class="info-row">
+        <span class="info-row-label">Status</span>
+        <span class="info-row-value">
+          <span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') | title }}</span>
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Priority</span>
+        <span class="info-row-value">
+          <span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span>
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Submission Deadline</span>
+        <span class="info-row-value">
+          {% if task.due_date %}
+          <span class="{% if task.due_date < today and task.status not in ['completed','on_hold'] %}text-danger{% endif %}">
+            {{ task.due_date }}
+          </span>
+          {% else %}<span class="text-muted">Not set</span>{% endif %}
+        </span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Department</span>
+        <span class="info-row-value">{{ task.department or '—' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Category</span>
+        <span class="info-row-value">{{ task.category or '—' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Created On</span>
+        <span class="info-row-value" style="font-size:.78rem">{{ task.created_at[:10] }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label">Last Updated</span>
+        <span class="info-row-value" style="font-size:.78rem">{{ task.updated_at[:16] }}</span>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="info-card" id="activity">
+      <h4>&#128336; Activity Log</h4>
+      {% if activity %}
+      <div class="activity-list">
+        {% for a in activity %}
+        <div class="activity-item">
+          <div class="activity-dot-wrap">
+            <span class="activity-dot dot-{{ a.action }}"></span>
+          </div>
+          <div class="activity-body">
+            <div class="activity-details">
+              <strong>{{ a.user_name or 'System' }}</strong>
+              —
+              {% if a.action == 'created' %}created this task
+              {% elif a.action == 'edited' %}edited task details
+              {% elif a.action == 'status_changed' %}{{ a.details or 'changed status' }}
+              {% elif a.action == 'archived' %}archived this task
+              {% elif a.action == 'restored' %}restored from archive
+              {% elif a.action == 'commented' %}added a comment
+              {% else %}{{ a.action.replace('_',' ') }}{% endif %}
+            </div>
+            <div class="activity-meta">{{ a.created_at[:16].replace('T',' ') }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="no-content">No activity recorded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

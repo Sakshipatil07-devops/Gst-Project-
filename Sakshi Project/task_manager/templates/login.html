@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — AARMS Group Task Manager</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+<div class="login-wrapper">
+
+  <!-- ── Left panel ─────────────────────────────────────── -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="brand-logo">AG</div>
+      <div class="brand-name">AARMS GROUP</div>
+      <div class="brand-tagline">Enterprise Task Management System</div>
+    </div>
+    <div class="login-features">
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Track tasks across all departments</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Monitor deadlines and priorities in real time</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Assign work and track completion status</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✓</span>
+        <span>Department-wise reporting and progress overview</span>
+      </div>
+    </div>
+    <div class="login-footer-text">© 2024 AARMS Group · All Rights Reserved</div>
+  </div>
+
+  <!-- ── Right panel ────────────────────────────────────── -->
+  <div class="login-right">
+    <div class="login-card">
+      <div class="login-card-header">
+        <h2>Welcome Back</h2>
+        <p>Sign in with your company credentials</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-area">
+        {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}" style="margin-bottom:.5rem">{{ msg }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login') }}" class="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <span class="input-icon">&#128100;</span>
+            <input type="text" id="username" name="username"
+                   placeholder="Enter your username" required
+                   autocomplete="username" autofocus>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">&#128274;</span>
+            <input type="password" id="password" name="password"
+                   placeholder="Enter your password" required
+                   autocomplete="current-password">
+            <button type="button" class="toggle-pw" onclick="togglePw()" title="Show/hide password">&#128065;</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-login">Sign In to AARMS Group</button>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

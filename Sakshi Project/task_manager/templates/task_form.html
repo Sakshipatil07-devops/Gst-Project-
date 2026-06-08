@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{% if edit_mode %}Edit Task{% else %}New Task{% endif %} — AARMS Group{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if edit_mode %}Edit Task{% else %}Create New Task{% endif %}</h1>
+    <p class="page-subtitle">
+      {% if edit_mode %}Update task details and status{% else %}Assign work with deadline and department{% endif %}
+    </p>
+  </div>
+  <a href="{{ url_for('tasks_list') }}" class="btn btn-secondary">&#8592; Back to Tasks</a>
+</div>
+
+<div class="form-card">
+  <form method="POST">
+
+    <!-- Title -->
+    <div class="form-group">
+      <label for="title">Task Title <span class="req">*</span></label>
+      <input type="text" id="title" name="title" class="form-control"
+             value="{{ task.title if task else '' }}"
+             placeholder="Enter a clear, descriptive task title" required maxlength="200">
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" class="form-control"
+                rows="3" placeholder="Provide details about what needs to be done...">{{ task.description if task else '' }}</textarea>
+    </div>
+
+    <div class="form-grid-2">
+
+      <!-- Assigned To -->
+      <div class="form-group">
+        <label for="assigned_to">Assign To</label>
+        <select id="assigned_to" name="assigned_to" class="form-control">
+          <option value="">— Select Employee —</option>
+          {% for u in all_users %}
+          <option value="{{ u.id }}"
+                  {% if task and task.assigned_to == u.id %}selected{% endif %}>
+            {{ u.full_name }} · {{ u.department }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-hint">Who is responsible for completing this task?</div>
+      </div>
+
+      <!-- Due Date -->
+      <div class="form-group">
+        <label for="due_date">Submission Deadline</label>
+        <input type="date" id="due_date" name="due_date" class="form-control"
+               value="{{ task.due_date if task and task.due_date else '' }}">
+        <div class="form-hint">When should this task be completed by?</div>
+      </div>
+
+      <!-- Priority -->
+      <div class="form-group">
+        <label for="priority">Priority Level <span class="req">*</span></label>
+        <select id="priority" name="priority" class="form-control">
+          {% for p in priorities %}
+          <option value="{{ p }}"
+                  {% if (task and task.priority == p) or (not task and p == 'medium') %}selected{% endif %}>
+            {{ p | title }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status (edit mode only) -->
+      {% if edit_mode and statuses %}
+      <div class="form-group">
+        <label for="status">Current Status <span class="req">*</span></label>
+        <select id="status" name="status" class="form-control">
+          {% for s in statuses %}
+          <option value="{{ s }}"
+                  {% if task and task.status == s %}selected{% endif %}>
+            {{ s.replace('_',' ') | title }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Department -->
+      <div class="form-group">
+        <label for="department">Department</label>
+        <select id="department" name="department" class="form-control">
+          <option value="">— Select Department —</option>
+          {% for d in departments %}
+          <option value="{{ d }}"
+                  {% if task and task.department == d %}selected
+                  {% elif not task and d == session.get('department','') %}selected{% endif %}>
+            {{ d }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Category -->
+      <div class="form-group">
+        <label for="category">Work Category</label>
+        <select id="category" name="category" class="form-control">
+          {% for c in categories %}
+          <option value="{{ c }}"
+                  {% if task and task.category == c %}selected
+                  {% elif not task and c == 'Other' %}selected{% endif %}>
+            {{ c }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+
+    <!-- Notes -->
+    <div class="form-group">
+      <label for="notes">Additional Notes</label>
+      <textarea id="notes" name="notes" class="form-control"
+                rows="3" placeholder="Any special instructions, context, or reference links...">{{ task.notes if task else '' }}</textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        {% if edit_mode %}&#9998; Save Changes{% else %}&#43; Create Task{% endif %}
+      </button>
+      <a href="{{ url_for('tasks_list') }}" class="btn btn-secondary">Cancel</a>
+      {% if edit_mode and task %}
+      <form method="POST" action="{{ url_for('delete_task', tid=task.id) }}" style="margin-left:auto"
+            onsubmit="return confirm('Permanently delete this task?')">
+        <button type="submit" class="btn btn-danger btn-sm">&#128465; Delete Task</button>
+      </form>
+      {% endif %}
+    </div>
+
+  </form>
+</div>
+
+{% endblock %}

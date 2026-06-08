@@ -628,3 +628,54 @@ if __name__ == "__main__":
     app.run(debug=True)
 else:
     init_db()
+
+
+@app.route("/calculator", methods=["GET", "POST"])
+def calculator():
+    result = None
+    expression = ""
+    
+    if request.method == "POST":
+        expression = request.form.get("expression", "").strip()
+        operation = request.form.get("operation", "")
+        
+        if operation == "calculate" and expression:
+            try:
+                # Safe evaluation for basic math operations
+                allowed_names = {
+                    "abs": abs, "round": round, "min": min, "max": max,
+                    "__builtins__": {}
+                }
+                result = eval(expression, allowed_names)
+                if isinstance(result, float) and result.is_integer():
+                    result = int(result)
+            except Exception as e:
+                result = f"Error: {str(e)}"
+        elif operation == "gst_calculate":
+            try:
+                amount = float(request.form.get("amount", "0"))
+                gst_rate = float(request.form.get("gst_rate", "18"))
+                gst_amount = amount * (gst_rate / 100)
+                total = amount + gst_amount
+                result = f"Amount: ₹{amount:.2f}, GST ({gst_rate}%): ₹{gst_amount:.2f}, Total: ₹{total:.2f}"
+            except ValueError:
+                result = "Error: Please enter valid numbers"
+        elif operation == "percentage":
+            try:
+                value = float(request.form.get("value", "0"))
+                percentage = float(request.form.get("percentage", "0"))
+                result_value = value * (percentage / 100)
+                result = f"{percentage}% of ₹{value:.2f} = ₹{result_value:.2f}"
+            except ValueError:
+                result = "Error: Please enter valid numbers"
+        elif operation == "discount":
+            try:
+                original_price = float(request.form.get("original_price", "0"))
+                discount_percent = float(request.form.get("discount_percent", "0"))
+                discount_amount = original_price * (discount_percent / 100)
+                final_price = original_price - discount_amount
+                result = f"Original: ₹{original_price:.2f}, Discount ({discount_percent}%): ₹{discount_amount:.2f}, Final: ₹{final_price:.2f}"
+            except ValueError:
+                result = "Error: Please enter valid numbers"
+    
+    return render_template("calculator.html", result=result, expression=expression)

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Recovery Bin — AARMS Group{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#128465; Recovery Bin</h1>
+    <p class="page-subtitle">{{ tasks|length }} deleted task{{ 's' if tasks|length != 1 else '' }} — auto-deleted after 30 days</p>
+  </div>
+</div>
+
+<div class="archived-banner">
+  <span style="font-size:1.25rem">&#128274;</span>
+  <div>
+    <strong>Admin only.</strong>
+    Deleted tasks are held here for 30 days before being permanently removed.
+    Restore a task to make it active again, or purge it immediately.
+  </div>
+</div>
+
+<div class="table-wrapper">
+  {% if tasks %}
+  <table class="tasks-table">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Assigned To</th>
+        <th>Department</th>
+        <th>Original Deadline</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Deleted At</th>
+        <th>Deleted By</th>
+        <th style="text-align:center">Days Left</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for item in tasks %}
+    {% set task = item.task %}
+    {% set days_left = item.days_left %}
+    <tr style="opacity:{% if days_left <= 3 %}.7{% else %}.85{% endif %}">
+
+      <td>
+        <div class="task-title-cell">
+          <span class="prio-dot pd-{{ task.priority }}"></span>
+          <div class="task-name">
+            {{ task.title }}
+            {% if task.description %}
+            <div class="task-desc">{{ task.description[:80] }}{% if task.description|length > 80 %}…{% endif %}</div>
+            {% endif %}
+          </div>
+        </div>
+      </td>
+
+      <td>
+        {% if task.assignee_name %}
+        <div style="font-size:.82rem;font-weight:600;color:var(--txt-dark)">{{ task.assignee_name }}</div>
+        {% if task.assignee_dept %}
+        <div style="font-size:.72rem;color:var(--txt-light)">{{ task.assignee_dept }}</div>
+        {% endif %}
+        {% else %}
+        <span class="text-muted">Unassigned</span>
+        {% endif %}
+      </td>
+
+      <td>
+        {% if task.department %}
+        <span class="badge badge-dept">{{ task.department }}</span>
+        {% else %}<span class="text-muted">—</span>{% endif %}
+      </td>
+
+      <td>
+        {% if task.due_date %}
+        <span class="due-chip upcoming">{{ task.due_date }}</span>
+        {% else %}<span class="due-chip no-date">—</span>{% endif %}
+      </td>
+
+      <td><span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span></td>
+
+      <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') | title }}</span></td>
+
+      <td style="font-size:.78rem;color:var(--txt-mid)">
+        {{ task.archived_at[:10] if task.archived_at else '—' }}
+      </td>
+
+      <td style="font-size:.78rem;color:var(--txt-mid)">
+        {{ task.archiver_name or '—' }}
+      </td>
+
+      <td style="text-align:center">
+        {% if days_left <= 3 %}
+        <span style="background:#fee2e2;color:var(--danger);font-size:.75rem;font-weight:800;padding:.25rem .6rem;border-radius:20px;">
+          {{ days_left }}d &#9888;
+        </span>
+        {% elif days_left <= 7 %}
+        <span style="background:#ffedd5;color:#c2410c;font-size:.75rem;font-weight:700;padding:.25rem .6rem;border-radius:20px;">
+          {{ days_left }}d
+        </span>
+        {% else %}
+        <span style="background:#f1f5f9;color:var(--txt-mid);font-size:.75rem;font-weight:600;padding:.25rem .6rem;border-radius:20px;">
+          {{ days_left }}d
+        </span>
+        {% endif %}
+      </td>
+
+      <td>
+        <div class="row-actions">
+          <form method="POST" action="{{ url_for('restore_task', tid=task.id) }}" style="display:inline">
+            <button type="submit" class="btn btn-success btn-sm">&#8635; Restore</button>
+          </form>
+          <form method="POST" action="{{ url_for('purge_task', tid=task.id) }}" style="display:inline"
+                onsubmit="return confirm('Permanently delete this task? This cannot be undone.')">
+            <button type="submit" class="btn btn-danger btn-sm">&#128293; Purge</button>
+          </form>
+        </div>
+      </td>
+
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% else %}
+  <div class="empty-table">
+    <div class="empty-icon">&#128465;</div>
+    <div class="empty-title">Recovery Bin is empty</div>
+    <p style="font-size:.875rem;color:var(--txt-light);margin-bottom:1rem">
+      Deleted tasks will appear here and be automatically removed after 30 days.
+    </p>
+    <a href="{{ url_for('tasks_list') }}" class="btn btn-primary">Go to Tasks</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

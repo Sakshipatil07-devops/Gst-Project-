@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — AARMS Group{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ greeting }}, {{ session.get('full_name','').split()[0] }}!</h1>
+    <p class="page-subtitle">
+      {% if admin %}All departments overview{% else %}Your task overview — {{ session.get('department','') }}{% endif %}
+      &nbsp;·&nbsp; Today: {{ today }}
+    </p>
+  </div>
+  {% if admin %}<a href="{{ url_for('add_task') }}" class="btn btn-primary">&#43; New Task</a>{% endif %}
+</div>
+
+<!-- Stats row -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon si-blue">&#128203;</div>
+    <div>
+      <div class="stat-value">{{ stats.total }}</div>
+      <div class="stat-label">Total Assigned</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-yellow">&#9203;</div>
+    <div>
+      <div class="stat-value">{{ stats.pending }}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-teal">&#9654;</div>
+    <div>
+      <div class="stat-value">{{ stats.in_progress }}</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-green">&#10003;</div>
+    <div>
+      <div class="stat-value">{{ stats.completed }}</div>
+      <div class="stat-label">Completed</div>
+    </div>
+  </div>
+  <div class="stat-card {% if stats.overdue > 0 %}stat-card-danger{% endif %}">
+    <div class="stat-icon si-red">&#9888;</div>
+    <div>
+      <div class="stat-value {% if stats.overdue > 0 %}text-danger{% endif %}">{{ stats.overdue }}</div>
+      <div class="stat-label">Overdue</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-orange">&#128200;</div>
+    <div>
+      <div class="stat-value">{{ stats.completion_pct }}%</div>
+      <div class="stat-label">Completion Rate</div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-card">
+  <div class="progress-header">
+    <span>Overall Task Progress</span>
+    <strong>{{ stats.completed }} of {{ stats.total }} tasks completed</strong>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" style="width:{{ stats.completion_pct }}%"></div>
+  </div>
+  <div class="progress-legend">
+    <span class="legend-dot dot-completed"></span> Completed ({{ stats.completed }})
+    <span class="legend-dot dot-progress" style="margin-left:.875rem"></span> In Progress ({{ stats.in_progress }})
+    <span class="legend-dot dot-pending" style="margin-left:.875rem"></span> Pending ({{ stats.pending }})
+    <span class="legend-dot dot-on-hold" style="margin-left:.875rem"></span> On Hold ({{ stats.on_hold }})
+  </div>
+</div>
+
+<!-- Due Soon Banner -->
+{% if due_soon %}
+<div class="due-soon-card">
+  <div class="due-soon-header">
+    <h3>&#9201; Due Soon (next 3 days)</h3>
+    <a href="{{ url_for('tasks_list') }}" style="font-size:.78rem;color:#92400e;font-weight:600">View all &#8594;</a>
+  </div>
+  <div class="due-soon-items">
+    {% for task in due_soon %}
+    <div class="due-soon-item">
+      <a href="{{ url_for('task_detail', tid=task.id) }}" class="due-soon-title">{{ task.title }}</a>
+      <div class="due-soon-info">
+        <span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span>
+        {% if task.due_date == today %}
+        <span class="due-soon-days days-today">Due Today</span>
+        {% elif task.due_date == tomorrow %}
+        <span class="due-soon-days days-1">Tomorrow</span>
+        {% else %}
+        <span class="due-soon-days days-2-3">{{ task.due_date }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Main dashboard grid -->
+<div class="dash-grid" style="margin-top:1.25rem">
+
+  <!-- Recent Tasks -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Recent Tasks</h3>
+      <a href="{{ url_for('tasks_list') }}" class="view-all">View All &#8594;</a>
+    </div>
+    {% if recent %}
+    <div class="task-list">
+      {% for task in recent %}
+      <div class="task-item">
+        <div class="task-item-left">
+          <form method="POST" action="{{ url_for('toggle_task', tid=task.id) }}">
+            <input type="hidden" name="next" value="{{ request.url }}">
+            <button class="toggle-check {% if task.status == 'completed' %}checked{% endif %}"
+                    title="Toggle complete">
+              {% if task.status == 'completed' %}&#10003;{% endif %}
+            </button>
+          </form>
+          <div style="min-width:0">
+            <a href="{{ url_for('task_detail', tid=task.id) }}"
+               class="task-item-title {% if task.status == 'completed' %}done{% endif %}">
+              {{ task.title }}
+            </a>
+            <div class="task-item-meta">
+              <span class="prio-dot pd-{{ task.priority }}"></span>
+              <span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span>
+              {% if task.department %}
+              <span class="badge badge-dept">{{ task.department }}</span>
+              {% endif %}
+              {% if task.due_date %}
+              <span class="{% if task.due_date < today and task.status not in ['completed','on_hold'] %}overdue-date{% else %}normal-date{% endif %}">
+                Due: {{ task.due_date }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') | title }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div>No tasks yet.</div>
+      <a href="{{ url_for('add_task') }}">Create your first task &#8594;</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column: Deadlines + Overdue -->
+  <div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <h3>&#128197; Upcoming Deadlines</h3>
+      </div>
+      {% if upcoming %}
+        {% for task in upcoming %}
+        <div class="deadline-item">
+          <div class="deadline-date">
+            <div class="deadline-day">{{ task.due_date[8:10] }}</div>
+            <div class="deadline-month">
+              {% set months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] %}
+              {{ months[task.due_date[5:7]|int - 1] }}
+            </div>
+          </div>
+          <div>
+            <a href="{{ url_for('task_detail', tid=task.id) }}" class="deadline-title">{{ task.title }}</a>
+            <div class="deadline-meta">
+              <span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span>
+              <span>{{ task.department or 'General' }}</span>
+              {% if task.assignee_name %}
+              <span>&#128100; {{ task.assignee_name }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="empty-state" style="padding:1.5rem">No upcoming deadlines.</div>
+      {% endif %}
+
+      {% if overdue %}
+      <div class="overdue-section">
+        <div class="overdue-heading">&#9888; Overdue Tasks ({{ overdue|length }})</div>
+        {% for task in overdue %}
+        <div class="overdue-item">
+          <a href="{{ url_for('task_detail', tid=task.id) }}">{{ task.title }}</a>
+          <span style="color:var(--danger);font-size:.75rem;font-weight:600">{{ task.due_date }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if admin and dept_stats %}
+    <div class="card">
+      <div class="card-header">
+        <h3>&#127970; Department Overview</h3>
+      </div>
+      <div style="padding:.75rem 0">
+        {% for row in dept_stats %}
+        {% if row.department %}
+        <div style="padding:.5rem 1.25rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid var(--border)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.82rem;font-weight:600;color:var(--txt-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              {{ row.department }}
+            </div>
+            <div class="dept-mini-bar">
+              <div class="dept-mini-fill"
+                   style="width:{% if row.count > 0 %}{{ (row.done / row.count * 100)|round|int }}{% else %}0{% endif %}%">
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:.85rem;font-weight:700;color:var(--txt-dark)">{{ row.count }}</div>
+            <div style="font-size:.7rem;color:var(--txt-light)">{{ row.done }} done</div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

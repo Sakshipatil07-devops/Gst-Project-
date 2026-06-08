@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Archived Tasks — AARMS Group{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#128230; Archived Tasks</h1>
+    <p class="page-subtitle">{{ tasks|length }} archived task{{ 's' if tasks|length != 1 else '' }}</p>
+  </div>
+  <a href="{{ url_for('tasks_list') }}" class="btn btn-secondary">&#8592; Back to Tasks</a>
+</div>
+
+<div class="archived-banner">
+  <span style="font-size:1.25rem">&#8505;</span>
+  <div>
+    <strong>Archived tasks are hidden from all active task lists.</strong>
+    You can restore a task to make it active again, or delete it permanently.
+  </div>
+</div>
+
+<div class="table-wrapper">
+  {% if tasks %}
+  <table class="tasks-table">
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Assigned To</th>
+        <th>Department</th>
+        <th>Original Deadline</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Archived At</th>
+        <th>Archived By</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for task in tasks %}
+    <tr style="opacity:.85">
+
+      <td>
+        <div class="task-title-cell">
+          <span class="prio-dot pd-{{ task.priority }}"></span>
+          <div class="task-name">
+            <a href="{{ url_for('task_detail', tid=task.id) }}">{{ task.title }}</a>
+            {% if task.description %}
+            <div class="task-desc">{{ task.description[:80] }}{% if task.description|length > 80 %}…{% endif %}</div>
+            {% endif %}
+          </div>
+        </div>
+      </td>
+
+      <td>
+        {% if task.assignee_name %}
+        <div style="font-size:.82rem;font-weight:600;color:var(--txt-dark)">{{ task.assignee_name }}</div>
+        {% if task.assignee_dept %}
+        <div style="font-size:.72rem;color:var(--txt-light)">{{ task.assignee_dept }}</div>
+        {% endif %}
+        {% else %}
+        <span class="text-muted">Unassigned</span>
+        {% endif %}
+      </td>
+
+      <td>
+        {% if task.department %}
+        <span class="badge badge-dept">{{ task.department }}</span>
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+
+      <td>
+        {% if task.due_date %}
+        <span class="due-chip upcoming">{{ task.due_date }}</span>
+        {% else %}
+        <span class="due-chip no-date">—</span>
+        {% endif %}
+      </td>
+
+      <td><span class="badge badge-{{ task.priority }}">{{ task.priority | title }}</span></td>
+
+      <td>
+        <span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') | title }}</span>
+      </td>
+
+      <td style="font-size:.78rem;color:var(--txt-mid)">
+        {{ task.archived_at[:10] if task.archived_at else '—' }}
+      </td>
+
+      <td style="font-size:.78rem;color:var(--txt-mid)">
+        {{ task.archiver_name or '—' }}
+      </td>
+
+      <td>
+        <div class="row-actions">
+          <form method="POST" action="{{ url_for('restore_task', tid=task.id) }}" style="display:inline">
+            <button type="submit" class="btn btn-success btn-sm" title="Restore task">&#8635; Restore</button>
+          </form>
+          <form method="POST" action="{{ url_for('delete_task', tid=task.id) }}" style="display:inline"
+                onsubmit="return confirm('Permanently delete this task? This cannot be undone.')">
+            <button type="submit" class="btn btn-danger btn-sm" title="Delete permanently">&#128293; Delete</button>
+          </form>
+        </div>
+      </td>
+
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% else %}
+  <div class="empty-table">
+    <div class="empty-icon">&#128230;</div>
+    <div class="empty-title">No archived tasks</div>
+    <p style="font-size:.875rem;color:var(--txt-light);margin-bottom:1rem">
+      Archived tasks will appear here. Use the archive option on any active task to move it here.
+    </p>
+    <a href="{{ url_for('tasks_list') }}" class="btn btn-primary">Go to My Tasks</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
