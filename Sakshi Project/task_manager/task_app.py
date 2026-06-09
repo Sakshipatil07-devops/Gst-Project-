@@ -11,8 +11,11 @@ from flask import (Flask, flash, g, make_response, redirect, render_template,
                    request, url_for, session, jsonify)
 from werkzeug.security import generate_password_hash, check_password_hash
 
+import os
+
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE = BASE_DIR / "aarms_tasks.db"
+# Vercel filesystem is read-only except /tmp
+DATABASE = Path("/tmp/aarms_tasks.db") if os.environ.get("VERCEL") else BASE_DIR / "aarms_tasks.db"
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "aarms-group-taskmanager-2024-secret-key"
